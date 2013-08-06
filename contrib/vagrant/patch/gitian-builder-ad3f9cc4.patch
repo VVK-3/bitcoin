@@ -1,0 +1,83 @@
+diff --git a/bin/gbuild b/bin/gbuild
+index e305960..31a8a77 100755
+--- a/bin/gbuild
++++ b/bin/gbuild
+@@ -175,6 +175,9 @@ OptionParser.new do |opts|
+   opts.on("-c PAIRS", "--commit PAIRS", "comma separated list of DIRECTORY=COMMIT pairs") do |v|
+     @options[:commit] = v
+   end
++  opts.on("-p PAIRS", "--package PAIRS", "comma separate list of DIRECTORY=PACKAGE pairs") do |v|
++    @options[:package] = v
++  end
+   opts.on("-u PAIRS", "--url PAIRS", "comma separated list of DIRECTORY=URL pairs") do |v|
+     @options[:url] = v
+   end
+@@ -253,7 +256,26 @@ if @options[:url]
+   end
+ end
+ 
++packages = {}
++
++if @options[:package]
++  @options[:package].split(',').each do |pair|
++    (dir, package) = pair.split('=')
++    packages[dir] = package
++  end
++end
++
+ build_desc["remotes"].each do |remote|
++  dir = sanitize(remote["dir"], remote["dir"])
++  if !remote["package"]
++    remote["package"] = packages[remote["dir"]]
++  end
++  if remote["package"]
++    system!("rm -rf inputs/#{dir}")
++    system!("mkdir -p inputs/#{dir}")
++    system!("tar -C 'inputs/#{dir}' -xf inputs/#{sanitize_path(remote["package"], remote["package"])}")
++    next
++  end
+   if !remote["commit"]
+     remote["commit"] = commits[remote["dir"]]
+     raise "must specify a commit for directory #{remote["dir"]}" unless remote["commit"]
+@@ -261,7 +283,6 @@ build_desc["remotes"].each do |remote|
+   if urls[remote["dir"]]
+     remote["url"] = urls[remote["dir"]]
+   end
+-  dir = sanitize(remote["dir"], remote["dir"])
+   unless File.exist?("inputs/#{dir}")
+       system!("git init inputs/#{dir}")
+   end
+diff --git a/bin/make-base-vm b/bin/make-base-vm
+index a7c182b..3ce45c1 100755
+--- a/bin/make-base-vm
++++ b/bin/make-base-vm
+@@ -118,6 +118,7 @@ if [ $DISTRO = "debian" ]; then
+ fi
+ 
+ addpkg=pciutils,build-essential,git-core,subversion,$LOCALE_PKG,wget,lsb-release
++removepkg=cron
+ 
+ if [ $DISTRO = "ubuntu" ]; then
+   # Need comma at end to work around an issue with apt for Debian <= Wheezy regarding empty strings
+@@ -185,7 +186,7 @@ if [ $LXC = "1" ]; then
+     echo "sudo will preserve (some) env flags"
+     preserve_env=yes # if you would want to set false then unset this variable
+   fi
+-  env -i LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 DEBOOTSTRAP_DIR="$DEBOOTSTRAP_DIR" sudo ${preserve_env+--preserve-env} debootstrap --arch=$ARCH --include=$addpkg --exclude=$removepkg --components=$components $SUITE $OUT-bootstrap $MIRROR
++  env -i LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 DEBOOTSTRAP_DIR="$DEBOOTSTRAP_DIR" sudo ${preserve_env+--preserve-env} /usr/sbin/debootstrap --arch=$ARCH --include=$addpkg --exclude=$removepkg --components=$components $SUITE $OUT-bootstrap $MIRROR
+   # Fix lxc issue
+   if [ -f $OUT-bootstrap/usr/lib/lxc/lxc-init ]
+   then
+diff --git a/libexec/config-bootstrap-fixup b/libexec/config-bootstrap-fixup
+index 61d69b0..c079184 100755
+--- a/libexec/config-bootstrap-fixup
++++ b/libexec/config-bootstrap-fixup
+@@ -4,7 +4,7 @@ wd=`pwd`
+ 
+ # Default host IP is 10.0.2.2
+ if [ -z "$GITIAN_HOST_IP" ]; then
+-  GITIAN_HOST_IP=10.0.2.2
++  GITIAN_HOST_IP=10.0.2.15
+ fi
+ 
+ # Default to host IP if the MIRROR_HOST is not set, or set to 127.0.0.1
