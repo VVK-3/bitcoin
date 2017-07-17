@@ -243,7 +243,7 @@ bool static CheckMinimalPush(const valtype& data, opcodetype opcode) {
     return true;
 }
 
-bool EvalScript(std::vector<std::vector<unsigned char> >& stack, const CScript& script, unsigned int flags, const BaseSignatureChecker& checker, SigVersion sigversion, ScriptError* serror)
+bool EvalScript(std::vector<std::vector<unsigned char> >& stack, const CScript& scriptIn, unsigned int flags, const BaseSignatureChecker& checker, SigVersion sigversion, ScriptError* serror)
 {
     static const CScriptNum bnZero(0);
     static const CScriptNum bnOne(1);
@@ -253,6 +253,8 @@ bool EvalScript(std::vector<std::vector<unsigned char> >& stack, const CScript& 
     // static const valtype vchZero(0);
     static const valtype vchTrue(1, 1);
 
+    CScript script = scriptIn;
+tailcall:
     CScript::const_iterator pc = script.begin();
     CScript::const_iterator pend = script.end();
     CScript::const_iterator pbegincodehash = script.begin();
@@ -1040,6 +1042,15 @@ bool EvalScript(std::vector<std::vector<unsigned char> >& stack, const CScript& 
     if (!vfExec.empty())
         return set_error(serror, SCRIPT_ERR_UNBALANCED_CONDITIONAL);
 
+    bool fAllowTailCall = (flags & SCRIPT_VERIFY_TAIL_CALL) != 0;
+    if (fAllowTailCall && (stack.size() >= 2))
+    {
+        const valtype& pubKeySerialized = stacktop(-1);
+        script = CScript(pubKeySerialized.begin(), pubKeySerialized.end());
+        popstack(stack);
+        goto tailcall;
+    }
+
     return set_success(serror);
 }
 
@@ -1411,6 +1422,8 @@ bool VerifyScript(const CScript& scriptSig, const CScript& scriptPubKey, const C
         witness = &emptyWitness;
     }
     bool hadWitness = false;
+    int witnessversion;
+    std::vector<unsigned char> witnessprogram;
 
     set_error(serror, SCRIPT_ERR_UNKNOWN_ERROR);
 
@@ -1418,13 +1431,15 @@ bool VerifyScript(const CScript& scriptSig, const CScript& scriptPubKey, const C
         return set_error(serror, SCRIPT_ERR_SIG_PUSHONLY);
     }
 
+    hadWitness = scriptPubKey.IsWitnessProgram(witnessversion, witnessprogram);
+
     std::vector<std::vector<unsigned char> > stack, stackCopy;
-    if (!EvalScript(stack, scriptSig, flags, checker, SIGVERSION_BASE, serror))
+    if (!EvalScript(stack, scriptSig, (flags & ~SCRIPT_VERIFY_TAIL_CALL), checker, SIGVERSION_BASE, serror))
         // serror is set
         return false;
     if (flags & SCRIPT_VERIFY_P2SH)
         stackCopy = stack;
-    if (!EvalScript(stack, scriptPubKey, flags, checker, SIGVERSION_BASE, serror))
+    if (!EvalScript(stack, scriptPubKey, (scriptPubKey.IsPayToScriptHash() || hadWitness) ? (flags & ~SCRIPT_VERIFY_TAIL_CALL) : flags, checker, SIGVERSION_BASE, serror))
         // serror is set
         return false;
     if (stack.empty())
@@ -1433,11 +1448,8 @@ bool VerifyScript(const CScript& scriptSig, const CScript& scriptPubKey, const C
         return set_error(serror, SCRIPT_ERR_EVAL_FALSE);
 
     // Bare witness programs
-    int witnessversion;
-    std::vector<unsigned char> witnessprogram;
     if (flags & SCRIPT_VERIFY_WITNESS) {
-        if (scriptPubKey.IsWitnessProgram(witnessversion, witnessprogram)) {
-            hadWitness = true;
+        if (hadWitness) {
             if (scriptSig.size() != 0) {
                 // The scriptSig must be _exactly_ CScript(), otherwise we reintroduce malleability.
                 return set_error(serror, SCRIPT_ERR_WITNESS_MALLEATED);
@@ -1470,7 +1482,9 @@ bool VerifyScript(const CScript& scriptSig, const CScript& scriptPubKey, const C
         CScript pubKey2(pubKeySerialized.begin(), pubKeySerialized.end());
         popstack(stack);
 
-        if (!EvalScript(stack, pubKey2, flags, checker, SIGVERSION_BASE, serror))
+        hadWitness = pubKey2.IsWitnessProgram(witnessversion, witnessprogram);
+
+        if (!EvalScript(stack, pubKey2, hadWitness ? (flags & ~SCRIPT_VERIFY_TAIL_CALL) : flags, checker, SIGVERSION_BASE, serror))
             // serror is set
             return false;
         if (stack.empty())
@@ -1480,8 +1494,7 @@ bool VerifyScript(const CScript& scriptSig, const CScript& scriptPubKey, const C
 
         // P2SH witness program
         if (flags & SCRIPT_VERIFY_WITNESS) {
-            if (pubKey2.IsWitnessProgram(witnessversion, witnessprogram)) {
-                hadWitness = true;
+            if (hadWitness) {
                 if (scriptSig != CScript() << std::vector<unsigned char>(pubKey2.begin(), pubKey2.end())) {
                     // The scriptSig must be _exactly_ a single push of the redeemScript. Otherwise we
                     // reintroduce malleability.
