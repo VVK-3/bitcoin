@@ -7,6 +7,7 @@
 #include <chain.h>
 #include <clientversion.h>
 #include <core_io.h>
+#include <consensus/merkle.h>
 #include <crypto/ripemd160.h>
 #include <init.h>
 #include <validation.h>
@@ -15,6 +16,7 @@
 #include <netbase.h>
 #include <rpc/blockchain.h>
 #include <rpc/server.h>
+#include <streams.h>
 #include <timedata.h>
 #include <util.h>
 #include <utilstrencodings.h>
@@ -630,6 +632,152 @@ UniValue echo(const JSONRPCRequest& request)
     return request.params;
 }
 
+UniValue merklebranch(const JSONRPCRequest& request)
+{
+    if (request.fHelp || (request.params.size() < 1) || (request.params.size() > 4))
+        throw std::runtime_error(
+            "merklebranch leaves position opt:preprocessed=false opt:fast=true\n"
+
+            "\nTakes a list of hex-encoded byte arrays. If preprocessed is false "
+            "(the default), they are hashed using double-SHA256. If preprocessed "
+            "is true, they each MUST be 32-bytes in length and they are not "
+            "hashed. The resulting vector of hashes and the second parameter (an "
+            "integer) are passed as parameters to ComputeMerkleBranch and then "
+            "ComputeMerkleRootFromBranch (or their fast variants if fast is true, "
+            " the default).\n"
+
+            "\nArguments:\n"
+            "1. \"leaves\"        (string, required) A JSON array of terminal values for the Merkle tree.\n"
+            "     [\n"
+            "       \"leaf\"      (string) arbitrary data, or a 32-byte hash\n"
+            "       ,...\n"
+            "     ]\n"
+            "2. \"position\"      (integer, optional) The index of the element to construct a proof for. If not specified, only the Merkle root is calculated.\n"
+            "3. \"preprocessed\"  (boolean, optional, default=false) Whether \"leaves\" contains data to be hashed (false), or already-processed hashes (true). If true, \"leaves\" must consist entirely of 64-byte hex-encoded hashes.\n"
+            "4. \"fast\"          (boolean, optional, default=true) Whether fast Merkle trees, or the original CVE-2012-2459 vulnerable, Satoshi-authored Merkle tres are to be used.\n"
+
+            "\nResult:\n"
+            "{\n"
+            "  \"root\":          (hash) Root hash of the Merkle tree\n"
+            "  \"branch\":        (array) Pruned branches along path\n"
+            "  \"path\":          (int) An integer representing the path\n"
+            "  \"proof\":         (hex) The serialization of branch and path\n"
+            "}\n"
+        );
+
+    using std::swap;
+
+    UniValue leaves = request.params[0].get_array();
+
+    int nPos = -1;
+    if (request.params.size() >= 2)
+        nPos = request.params[1].get_int();
+
+    if (nPos >= (int)leaves.size())
+        throw JSONRPCError(RPC_INVALID_PARAMETER, "position exceeds size of hash list");
+
+    bool fPreProcessed = false;
+    if (request.params.size() >= 3)
+        fPreProcessed = request.params[2].get_bool();
+
+    bool fFast = true;
+    if (request.params.size() >= 4)
+        fFast = request.params[3].get_bool();
+
+    std::vector<uint256> hashes;
+    if (fPreProcessed)
+    {
+        for (size_t i = 0; i < leaves.size(); ++i)
+        {
+            const std::string& leaf = leaves[i].get_str();
+            if ((leaf.size() != 64) || !(IsHex(leaf)))
+                throw JSONRPCError(RPC_INVALID_PARAMETER, "preprocessed hashes must be hex-encoded 32-bytes");
+            hashes.push_back(uint256S(leaf));
+        }
+    }
+    else
+    {
+        for (size_t i = 0; i < leaves.size(); ++i)
+        {
+            uint256 hash;
+            if (!IsHex(leaves[i].get_str()))
+                throw JSONRPCError(RPC_INVALID_PARAMETER, "leaves must be hex-encoded data");
+            const std::vector<unsigned char> leaf = ParseHex(leaves[i].get_str());
+            CHash256().Write(&leaf[0], leaf.size()).Finalize(hash.begin());
+            hashes.push_back(hash);
+        }
+    }
+
+    uint256 root;
+    std::vector<uint256> branch;
+    uint32_t path;
+    std::vector<unsigned char> proof;
+    UniValue result(UniValue::VOBJ);
+
+    if (nPos < 0)
+    {
+        if (!fFast)
+            root = ComputeMerkleRoot(hashes, NULL);
+        else
+            root = ComputeFastMerkleRoot(hashes);
+        result.push_back(Pair("root", root.GetHex()));
+        return result;
+    }
+
+    if (!fFast)
+    {
+        branch = ComputeMerkleBranch(hashes, nPos);
+        root = ComputeMerkleRootFromBranch(hashes[nPos], branch, nPos);
+        path = (uint32_t)nPos;
+        // proof is clear
+    }
+    else
+    {
+        std::pair<std::vector<uint256>, uint32_t> r = ComputeFastMerkleBranch(hashes, nPos);
+        root = ComputeFastMerkleRootFromBranch(hashes[nPos], r.first, r.second);
+        branch.swap(r.first);
+        path = r.second;
+        std::vector<MerkleTree> subtrees(hashes.size());
+        if (hashes.empty()) {
+            subtrees.emplace_back();
+        } else {
+            for (std::size_t i = 0; i < hashes.size(); ++i) {
+              if (i == static_cast<std::size_t>(nPos)) {
+                    subtrees[i].m_verify.emplace_back(hashes[i]);
+                } else {
+                    subtrees[i].m_proof.m_skip.emplace_back(hashes[i]);
+                }
+            }
+            while (subtrees.size() > 1) {
+                std::vector<MerkleTree> other;
+                for (auto itr = subtrees.begin(); itr != subtrees.end(); ++itr) {
+                    auto itr2 = std::next(itr);
+                    if (itr2 != subtrees.end()) {
+                        other.emplace_back(*itr++, *itr);
+                    } else {
+                        other.emplace_back();
+                        swap(other.back(), *itr);
+                    }
+                }
+                swap(other, subtrees);
+            }
+        }
+        CVectorWriter ssProof(SER_NETWORK, PROTOCOL_VERSION, proof, proof.size());
+        ssProof << subtrees[0];
+    }
+
+    result.push_back(Pair("root", root.GetHex()));
+    UniValue uvBranch = UniValue(UniValue::VARR);
+    for (auto h = branch.begin(); h != branch.end(); ++h)
+        uvBranch.push_back(h->GetHex());
+    result.push_back(Pair("branch", uvBranch));
+    result.push_back(Pair("path", (int64_t)path));
+    if (!proof.empty())
+        result.push_back(Pair("proof", HexStr(proof)));
+
+    return result;
+}
+
 static const CRPCCommand commands[] =
 { //  category              name                      actor (function)         argNames
   //  --------------------- ------------------------  -----------------------  ----------
@@ -639,6 +787,7 @@ static const CRPCCommand commands[] =
     { "util",               "createmultisig",         &createmultisig,         {"nrequired","keys"} },
     { "util",               "verifymessage",          &verifymessage,          {"address","signature","message"} },
     { "util",               "signmessagewithprivkey", &signmessagewithprivkey, {"privkey","message"} },
+    { "util",               "merklebranch",           &merklebranch,           {"leaves","position","preprocessed","fast"} },
 
     /* Not shown in help */
     { "hidden",             "setmocktime",            &setmocktime,            {"timestamp"}},
