@@ -242,7 +242,7 @@ bool static CheckMinimalPush(const valtype& data, opcodetype opcode) {
     return true;
 }
 
-bool EvalScript(std::vector<std::vector<unsigned char> >& stack, const CScript& script, unsigned int flags, const BaseSignatureChecker& checker, SigVersion sigversion, ScriptError* serror)
+bool EvalScript(std::vector<std::vector<unsigned char> >& stack, const CScript& scriptIn, unsigned int flags, const BaseSignatureChecker& checker, SigVersion sigversion, ScriptError* serror)
 {
     static const CScriptNum bnZero(0);
     static const CScriptNum bnOne(1);
@@ -252,17 +252,20 @@ bool EvalScript(std::vector<std::vector<unsigned char> >& stack, const CScript& 
     // static const valtype vchZero(0);
     static const valtype vchTrue(1, 1);
 
+    CScript script = scriptIn;
+    bool fAllowTailCall = (flags & SCRIPT_VERIFY_TAIL_CALL) != 0;
+    std::vector<valtype> altstack;
+    int nOpCount = 0;
+tailcall:
     CScript::const_iterator pc = script.begin();
     CScript::const_iterator pend = script.end();
     CScript::const_iterator pbegincodehash = script.begin();
     opcodetype opcode;
     valtype vchPushValue;
     std::vector<bool> vfExec;
-    std::vector<valtype> altstack;
     set_error(serror, SCRIPT_ERR_UNKNOWN_ERROR);
     if (script.size() > MAX_SCRIPT_SIZE)
         return set_error(serror, SCRIPT_ERR_SCRIPT_SIZE);
-    int nOpCount = 0;
     bool fRequireMinimal = (flags & SCRIPT_VERIFY_MINIMALDATA) != 0;
 
     try
@@ -1033,6 +1036,20 @@ bool EvalScript(std::vector<std::vector<unsigned char> >& stack, const CScript& 
     if (!vfExec.empty())
         return set_error(serror, SCRIPT_ERR_UNBALANCED_CONDITIONAL);
 
+    if (fAllowTailCall && !stack.empty() && ((stack.size() + altstack.size()) >= 2) && CastToBool(stack.back())) {
+        // Replace the script we just finished executing with the
+        // subscript from the top of the stack:
+        const valtype& policyScript = stacktop(-1);
+        script = CScript(policyScript.begin(), policyScript.end());
+        popstack(stack);
+        // Only allow one tail-call:
+        fAllowTailCall = false;
+        // Disable nOpCount limit for subscript, effectively:
+        nOpCount = std::numeric_limits<int>::min();
+        // Go back to the top of this function:
+        goto tailcall;
+    }
+
     return set_success(serror);
 }
 
@@ -1407,6 +1424,8 @@ bool VerifyScript(const CScript& scriptSig, const CScript& scriptPubKey, const C
         witness = &emptyWitness;
     }
     bool hadWitness = false;
+    unsigned int witnessflags = flags;
+    flags &= ~SCRIPT_VERIFY_TAIL_CALL;
 
     set_error(serror, SCRIPT_ERR_UNKNOWN_ERROR);
 
@@ -1438,7 +1457,7 @@ bool VerifyScript(const CScript& scriptSig, const CScript& scriptPubKey, const C
                 // The scriptSig must be _exactly_ CScript(), otherwise we reintroduce malleability.
                 return set_error(serror, SCRIPT_ERR_WITNESS_MALLEATED);
             }
-            if (!VerifyWitnessProgram(*witness, witnessversion, witnessprogram, flags, checker, serror)) {
+            if (!VerifyWitnessProgram(*witness, witnessversion, witnessprogram, witnessflags, checker, serror)) {
                 return false;
             }
             // Bypass the cleanstack check at the end. The actual stack is obviously not clean
@@ -1483,7 +1502,7 @@ bool VerifyScript(const CScript& scriptSig, const CScript& scriptPubKey, const C
                     // reintroduce malleability.
                     return set_error(serror, SCRIPT_ERR_WITNESS_MALLEATED_P2SH);
                 }
-                if (!VerifyWitnessProgram(*witness, witnessversion, witnessprogram, flags, checker, serror)) {
+                if (!VerifyWitnessProgram(*witness, witnessversion, witnessprogram, witnessflags, checker, serror)) {
                     return false;
                 }
                 // Bypass the cleanstack check at the end. The actual stack is obviously not clean
