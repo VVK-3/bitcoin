@@ -246,7 +246,7 @@ void CSHA256::Finalize(unsigned char hash[OUTPUT_SIZE])
     Midstate(hash, NULL, NULL);
 }
 
-void CSHA256::Midstate(unsigned char hash[OUTPUT_SIZE], uint64_t* len, unsigned char *buffer)
+void CSHA256::Midstate(unsigned char hash[OUTPUT_SIZE], uint64_t* len, unsigned char* buffer)
 {
     WriteBE32(hash, s[0]);
     WriteBE32(hash + 4, s[1]);
