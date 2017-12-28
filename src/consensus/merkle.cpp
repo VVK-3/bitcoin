@@ -410,8 +410,9 @@ void MerkleProof::clear() noexcept
 
 void swap(MerkleProof& lhs, MerkleProof& rhs)
 {
-    std::swap(lhs.m_path, rhs.m_path);
-    std::swap(lhs.m_skip, rhs.m_skip);
+    using std::swap;
+    swap(lhs.m_path, rhs.m_path);
+    swap(lhs.m_skip, rhs.m_skip);
 }
 
 MerkleTree::MerkleTree(const MerkleTree& left, const MerkleTree& right)
@@ -453,8 +454,9 @@ void MerkleTree::clear() noexcept
 
 void swap(MerkleTree& lhs, MerkleTree& rhs)
 {
-    std::swap(lhs.m_proof, rhs.m_proof);
-    std::swap(lhs.m_verify, rhs.m_verify);
+    using std::swap;
+    swap(lhs.m_proof, rhs.m_proof);
+    swap(lhs.m_verify, rhs.m_verify);
 }
 
 uint256 MerkleTree::GetHash(bool* invalid) const
