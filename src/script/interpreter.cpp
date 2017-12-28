@@ -253,9 +253,10 @@ bool EvalScript(std::vector<std::vector<unsigned char> >& stack, const CScript& 
     static const valtype vchTrue(1, 1);
 
     CScript script = scriptIn;
-    bool fAllowTailCall = (flags & SCRIPT_VERIFY_TAIL_CALL) != 0;
+    bool allow_tail_call = (flags & SCRIPT_VERIFY_TAIL_CALL) != 0;
     std::vector<valtype> altstack;
     int nOpCount = 0;
+
 tailcall:
     CScript::const_iterator pc = script.begin();
     CScript::const_iterator pend = script.end();
@@ -1036,14 +1037,14 @@ tailcall:
     if (!vfExec.empty())
         return set_error(serror, SCRIPT_ERR_UNBALANCED_CONDITIONAL);
 
-    if (fAllowTailCall && !stack.empty() && ((stack.size() + altstack.size()) >= 2) && CastToBool(stack.back())) {
+    if (allow_tail_call && !stack.empty() && ((stack.size() + altstack.size()) >= 2) && CastToBool(stack.back())) {
         // Replace the script we just finished executing with the
         // subscript from the top of the stack:
         const valtype& policyScript = stacktop(-1);
         script = CScript(policyScript.begin(), policyScript.end());
         popstack(stack);
         // Only allow one tail-call:
-        fAllowTailCall = false;
+        allow_tail_call = false;
         // Disable nOpCount limit for subscript, effectively:
         nOpCount = std::numeric_limits<int>::min();
         // Go back to the top of this function:

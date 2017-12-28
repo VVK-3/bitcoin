@@ -114,7 +114,7 @@ enum
 
     // Tail call recursion
     //
-    // See BIP??? for details.
+    // See BIP-117 for details.
     SCRIPT_VERIFY_TAIL_CALL = (1U << 17),
 };
 
