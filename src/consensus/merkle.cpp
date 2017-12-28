@@ -76,8 +76,8 @@ static void MerkleComputation(const std::vector<uint256>& leaves, uint256* proot
         if (proot) *proot = uint256();
         return;
     }
-    bool fMutable = flags & MERKLE_COMPUTATION_MUTABLE;
-    void (*MerkleHash)(uint256&, const uint256&, const uint256&) = MerkleHash_Hash256;
+    bool is_mutable = flags & MERKLE_COMPUTATION_MUTABLE;
+    auto MerkleHash = MerkleHash_Hash256;
     if (flags & MERKLE_COMPUTATION_FAST) {
         MerkleHash = MerkleHash_Sha256Midstate;
     }
@@ -134,10 +134,10 @@ static void MerkleComputation(const std::vector<uint256>& leaves, uint256* proot
         // If we reach this point, h is an inner value that is not the top.
         // We combine it with itself (Bitcoin's special rule for odd levels in
         // the tree) to produce a higher level one.
-        if (fMutable && pbranch && matchh) {
+        if (is_mutable && pbranch && matchh) {
             pbranch->push_back(h);
         }
-        if (fMutable) {
+        if (is_mutable) {
             MerkleHash(h, h, h);
         }
         // Increment count to the value it would have if two entries at this
