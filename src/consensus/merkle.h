@@ -251,6 +251,7 @@ struct MerkleNodeReference
      */
     typedef unsigned char base_type;
     typedef unsigned char offset_type;
+
 protected:
     base_type* m_base;
     offset_type m_offset;
@@ -1162,7 +1163,7 @@ public:
         }
     }
 };
-} /* namespace std { */
+} // namespace std
 
 template<typename Stream, typename T, typename A>
 void Serialize_impl(Stream& os, const std::vector<T, A>& v, const MerkleNode&)
