@@ -1162,7 +1162,24 @@ public:
             READWRITE(REF(CFlatData(m_vch)));
         }
     }
+
+    friend bool std::operator==(const vector &lhs, const vector &rhs);
+    friend bool std::operator<(const vector &lhs, const vector &rhs);
 };
+
+inline bool operator==(const vector<MerkleNode> &lhs, const vector<MerkleNode> &rhs)
+  { return ((lhs.m_count == rhs.m_count) && (lhs.m_vch == rhs.m_vch)); }
+inline bool operator!=(const vector<MerkleNode> &lhs, const vector<MerkleNode> &rhs)
+  { return !(lhs == rhs); }
+
+inline bool operator<(const vector<MerkleNode> &lhs, const vector<MerkleNode> &rhs)
+  { return ((lhs.m_vch < rhs.m_vch) || ((lhs.m_vch == rhs.m_vch) && (lhs.m_count < rhs.m_count))); }
+inline bool operator<=(const vector<MerkleNode> &lhs, const vector<MerkleNode> &rhs)
+  { return !(rhs < lhs); }
+inline bool operator>=(const vector<MerkleNode> &lhs, const vector<MerkleNode> &rhs)
+  { return !(lhs < rhs); }
+inline bool operator>(const vector<MerkleNode> &lhs, const vector<MerkleNode> &rhs)
+  { return (rhs < lhs); }
 } // namespace std
 
 template<typename Stream, typename T, typename A>
