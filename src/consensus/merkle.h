@@ -809,6 +809,22 @@ public:
         return *this;
     }
 
+    /* Equality comparators */
+    inline bool operator==(const vector &other) const
+      { return ((m_count == other.m_count) && (m_vch == other.m_vch)); }
+    inline bool operator!=(const vector &other) const
+      { return !(*this == other); }
+
+    /* Relational compariators */
+    inline bool operator<(const vector &other) const
+      { return ((m_vch < other.m_vch) || ((m_vch == other.m_vch) && (m_count < other.m_count))); }
+    inline bool operator<=(const vector &other) const
+      { return !(other < *this); }
+    inline bool operator>=(const vector &other) const
+      { return !(*this < other); }
+    inline bool operator>(const vector &other) const
+      { return (other < *this); }
+
     /* Clear & assign methods */
     void assign(size_type count, value_type value)
     {
@@ -1162,24 +1178,21 @@ public:
             READWRITE(REF(CFlatData(m_vch)));
         }
     }
-
-    friend bool std::operator==(const vector &lhs, const vector &rhs);
-    friend bool std::operator<(const vector &lhs, const vector &rhs);
 };
 
-inline bool operator==(const vector<MerkleNode> &lhs, const vector<MerkleNode> &rhs)
-  { return ((lhs.m_count == rhs.m_count) && (lhs.m_vch == rhs.m_vch)); }
-inline bool operator!=(const vector<MerkleNode> &lhs, const vector<MerkleNode> &rhs)
-  { return !(lhs == rhs); }
+template<class A> inline bool operator==(const vector<MerkleNode, A> &lhs, const vector<MerkleNode, A> &rhs)
+  { return lhs.operator==(rhs); }
+template<class A> inline bool operator!=(const vector<MerkleNode, A> &lhs, const vector<MerkleNode, A> &rhs)
+  { return lhs.operator!=(rhs); }
 
-inline bool operator<(const vector<MerkleNode> &lhs, const vector<MerkleNode> &rhs)
-  { return ((lhs.m_vch < rhs.m_vch) || ((lhs.m_vch == rhs.m_vch) && (lhs.m_count < rhs.m_count))); }
-inline bool operator<=(const vector<MerkleNode> &lhs, const vector<MerkleNode> &rhs)
-  { return !(rhs < lhs); }
-inline bool operator>=(const vector<MerkleNode> &lhs, const vector<MerkleNode> &rhs)
-  { return !(lhs < rhs); }
-inline bool operator>(const vector<MerkleNode> &lhs, const vector<MerkleNode> &rhs)
-  { return (rhs < lhs); }
+template<class A> inline bool operator<(const vector<MerkleNode, A> &lhs, const vector<MerkleNode, A> &rhs)
+  { return lhs.operator<(rhs); }
+template<class A> inline bool operator<=(const vector<MerkleNode, A> &lhs, const vector<MerkleNode, A> &rhs)
+  { return lhs.operator<=(rhs); }
+template<class A> inline bool operator>=(const vector<MerkleNode, A> &lhs, const vector<MerkleNode, A> &rhs)
+  { return lhs.operator>=(rhs); }
+template<class A> inline bool operator>(const vector<MerkleNode, A> &lhs, const vector<MerkleNode, A> &rhs)
+  { return lhs.operator>(rhs); }
 } // namespace std
 
 template<typename Stream, typename T, typename A>
