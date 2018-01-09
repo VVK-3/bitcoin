@@ -866,9 +866,9 @@ public:
     }
 
     inline reference operator[](size_type pos)
-      { return reference(&m_vch[0] + (3 * (pos / 8)), pos % 8); }
+      { return reference(data() + (3 * (pos / 8)), pos % 8); }
     inline const_reference operator[](size_type pos) const
-      { return const_reference(const_cast<const_reference::base_type*>(&m_vch[0] + (3 * (pos / 8))), pos % 8); }
+      { return const_reference(const_cast<const_reference::base_type*>(data() + (3 * (pos / 8))), pos % 8); }
 
     inline reference front()
       { return (*this)[0]; }
@@ -881,22 +881,22 @@ public:
       { return (*this)[m_count-1]; }
 
     inline base_type* data()
-      { return &m_vch[0]; }
+      { return m_vch.data(); }
     inline const base_type* data() const
-      { return &m_vch[0]; }
+      { return m_vch.data(); }
 
     /* Iterators */
     inline iterator begin() noexcept
-      { return iterator(&m_vch[0], 0); }
+      { return iterator(data(), 0); }
     inline const_iterator begin() const noexcept
-      { return const_iterator(&m_vch[0], 0); }
+      { return const_iterator(data(), 0); }
     inline const_iterator cbegin() const noexcept
       { return begin(); }
 
     inline iterator end() noexcept
-      { return iterator(&m_vch[0] + (3 * (m_count / 8)), m_count % 8); }
+      { return iterator(data() + (3 * (m_count / 8)), m_count % 8); }
     inline const_iterator end() const noexcept
-      { return const_iterator(&m_vch[0] + (3 * (m_count / 8)), m_count % 8); }
+      { return const_iterator(data() + (3 * (m_count / 8)), m_count % 8); }
     inline const_iterator cend() const noexcept
       { return end(); }
 
