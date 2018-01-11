@@ -2708,7 +2708,7 @@
 ],
 [
     [
-        "51",
+        "4f",
         "01",
         "6b",
         0.00000001
@@ -2854,6 +2854,190 @@
     "P2SH,WITNESS,CLEANSTACK,TAIL_CALL",
     "OP_RETURN",
     "P2WSH wrapped in P2SH tail-call not subject to opcode limit"
+],
+[
+    [
+        "51",
+        "6a",
+        "6b",
+        0.00000001
+    ],
+    "",
+    "0x00 0x20 0x8254c329a92850f6d539dd376f4816ee2764517da5e0235514af433164480d7a",
+    "P2SH,WITNESS,CLEANSTACK,TAIL_CALL",
+    "INVALID_STACK_OPERATION",
+    "Tail-call of OP_1 with missing stack elements"
+],
+[
+    [
+        "51",
+        "61",
+        "61",
+        "6b6b",
+        0.00000001
+    ],
+    "",
+    "0x00 0x20 0xad370ed99b189921e7fe26057c40aab9f4fee8385e47606f50f348b9a5530af0",
+    "P2SH,WITNESS,CLEANSTACK,TAIL_CALL",
+    "EVAL_FALSE",
+    "Tail-call of OP_1 that results in empty stack"
+],
+[
+    [
+        "51",
+        "6a",
+        "6a",
+        "6b6b",
+        0.00000001
+    ],
+    "",
+    "0x00 0x20 0xad370ed99b189921e7fe26057c40aab9f4fee8385e47606f50f348b9a5530af0",
+    "P2SH,WITNESS,CLEANSTACK,TAIL_CALL",
+    "OP_RETURN",
+    "Tail-call of OP_1 with OP_RETURN"
+],
+[
+    [
+        "51",
+        "51",
+        "61",
+        "6b6b",
+        0.00000001
+    ],
+    "",
+    "0x00 0x20 0xad370ed99b189921e7fe26057c40aab9f4fee8385e47606f50f348b9a5530af0",
+    "P2SH,WITNESS,CLEANSTACK,TAIL_CALL",
+    "OK",
+    "Tail-call of OP_1"
+],
+[
+    [
+        "51",
+        "51",
+        "51",
+        "6b6b",
+        0.00000001
+    ],
+    "",
+    "0x00 0x20 0xad370ed99b189921e7fe26057c40aab9f4fee8385e47606f50f348b9a5530af0",
+    "P2SH,WITNESS,CLEANSTACK,TAIL_CALL",
+    "EVAL_FALSE",
+    "Tail-call of OP_1 with too many stack elements"
+],
+[
+    [
+        "60",
+        "61",
+        "61",
+        "61",
+        "61",
+        "61",
+        "61",
+        "61",
+        "61",
+        "61",
+        "61",
+        "61",
+        "61",
+        "61",
+        "61",
+        "61",
+        "61",
+        "6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b",
+        0.00000001
+    ],
+    "",
+    "0x00 0x20 0xee6321d758cc85fac5f6ad5983bbd4ad1dd594c564fcc8e2f5896f09afc4d574",
+    "P2SH,WITNESS,CLEANSTACK,TAIL_CALL",
+    "INVALID_STACK_OPERATION",
+    "Tail-call of OP_16 with insufficient stack elements"
+],
+[
+    [
+        "60",
+        "61",
+        "61",
+        "61",
+        "61",
+        "61",
+        "61",
+        "61",
+        "61",
+        "61",
+        "61",
+        "61",
+        "61",
+        "61",
+        "61",
+        "61",
+        "61",
+        "61",
+        "6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b",
+        0.00000001
+    ],
+    "",
+    "0x00 0x20 0xedda83f4bc5d42e0149bb4a0534bb71001b21116748b1088978bfb008149630f",
+    "P2SH,WITNESS,CLEANSTACK,TAIL_CALL",
+    "EVAL_FALSE",
+    "Tail-call of OP_16 that results in empty stack"
+],
+[
+    [
+        "60",
+        "61",
+        "61",
+        "61",
+        "61",
+        "61",
+        "61",
+        "61",
+        "61",
+        "61",
+        "61",
+        "61",
+        "61",
+        "61",
+        "61",
+        "61",
+        "61",
+        "51",
+        "6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b",
+        0.00000001
+    ],
+    "",
+    "0x00 0x20 0xedda83f4bc5d42e0149bb4a0534bb71001b21116748b1088978bfb008149630f",
+    "P2SH,WITNESS,CLEANSTACK,TAIL_CALL",
+    "OK",
+    "Tail-call of OP_16"
+],
+[
+    [
+        "60",
+        "51",
+        "61",
+        "61",
+        "61",
+        "61",
+        "61",
+        "61",
+        "61",
+        "61",
+        "61",
+        "61",
+        "61",
+        "61",
+        "61",
+        "61",
+        "61",
+        "51",
+        "6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b",
+        0.00000001
+    ],
+    "",
+    "0x00 0x20 0xedda83f4bc5d42e0149bb4a0534bb71001b21116748b1088978bfb008149630f",
+    "P2SH,WITNESS,CLEANSTACK,TAIL_CALL",
+    "EVAL_FALSE",
+    "Tail-call of OP_16 with cleanstack violation"
 ],
 
 ["The End"]
