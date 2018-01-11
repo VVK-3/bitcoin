@@ -1040,41 +1040,43 @@ tailcall:
     if (allow_tail_call && !stack.empty() && ((stack.size() + altstack.size()) >= 2) && CastToBool(stack.back())) {
         // Replace the script we just finished executing with the
         // subscript from the top of the stack:
-        valtype& policyScript = stacktop(-1);
+        const valtype& top = stacktop(-1);
+        script = CScript(top.begin(), top.end());
         popstack(stack);
-        // If policy script is one of OP_1 ... OP_16, then it actually
-        // specifies (one less than) the number of script components
-        // that follow, which are concatinated and executed:
-        if ((policyScript.size() == 1) && ((0x51 <= policyScript.front()) && (policyScript.front() <= 0x60))) {
-            // A single script is simply specified. Multiple scripts
-            // are specified with OP_1 (2 script components) through
-            // OP_16 (17 script components):
-            const std::size_t num_scripts = policyScript.front() - 0x4f;
+        // A single component policy script is simply specified.
+        // Multiple scripts are specified with OP_1 (2 script
+        // components) through OP_16 (17 script components):
+        if ((script.size() == 1) && ((OP_1 <= script.front()) && (script.front() <= OP_16))) {
+            // If policy script is one of OP_1 ... OP_16, then it
+            // actually specifies (one less than) the number of script
+            // components that follow, which are concatinated to form
+            // the policy script.
+            const std::size_t num_scripts = (script.front() - OP_1) + 2;
             if ((stack.size() + altstack.size()) < num_scripts)
                 return set_error(serror, SCRIPT_ERR_INVALID_STACK_OPERATION);
             // First we determine the size of the aggregate script, so
             // we can allocate enough space to hold it. In doing so we
             // also advance an iterator to point to the "first" script
             // component, the one deepest on the combined stacks.
-            auto itr = stack.rbegin();
+            auto itr = stack.empty()? altstack.rbegin(): stack.rbegin();
             std::size_t script_size = 0;
             for (std::size_t i = 0; i < num_scripts; ++i) {
+                script_size += itr->size();
                 ++itr;
                 if (itr == stack.rend())
                     itr = altstack.rbegin();
-                script_size += itr->size();
             }
-            policyScript.resize(script_size);
-            // We copy the script components into policyScript in
-            // reverse order, beginning with the deepest script
-            // component on the stack:
-            auto pos = policyScript.begin();
+            script.resize(script_size);
+            // We copy the script components into script in reverse
+            // order, beginning with the deepest script component on
+            // the stack:
+            auto pos = script.begin();
             for (std::size_t i = 0; i < num_scripts; ++i) {
-                std::copy(pos, itr->begin(), itr->end());
-                pos += itr->size();
                 if (itr == altstack.rbegin())
                     itr = stack.rend();
                 --itr;
+                std::copy(itr->begin(), itr->end(), pos);
+                pos += itr->size();
             }
             // Finally we pop the consumed script components off their
             // respective stacks:
@@ -1085,8 +1087,6 @@ tailcall:
                     popstack(altstack);
             }
         }
-        // Type-cast from byte array to script:
-        script = CScript(policyScript.begin(), policyScript.end());
         // Only allow one tail-call:
         allow_tail_call = false;
         // Disable nOpCount limit for subscript, effectively:
