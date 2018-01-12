@@ -1064,13 +1064,16 @@ tailcall:
             // we can allocate enough space to hold it. In doing so we
             // also advance an iterator to point to the "first" script
             // component, the one deepest on the combined stacks.
-            auto itr = stack.empty()? altstack.rbegin(): stack.rbegin();
+            std::vector<valtype>* curstack = &stack;
+            std::size_t elem = curstack->size();
             std::size_t script_size = 0;
             for (std::size_t i = 0; i < num_scripts; ++i) {
-                script_size += itr->size();
-                ++itr;
-                if (itr == stack.rend())
-                    itr = altstack.rbegin();
+                if (elem == 0) {
+                    curstack = &altstack;
+                    elem = curstack->size();
+                }
+                --elem;
+                script_size += (*curstack)[elem].size();
             }
             script.resize(script_size);
             // We copy the script components into script in reverse
@@ -1078,11 +1081,13 @@ tailcall:
             // the stack:
             auto pos = script.begin();
             for (std::size_t i = 0; i < num_scripts; ++i) {
-                if (itr == altstack.rbegin())
-                    itr = stack.rend();
-                --itr;
-                std::copy(itr->begin(), itr->end(), pos);
-                pos += itr->size();
+                std::copy((*curstack)[elem].begin(), (*curstack)[elem].end(), pos);
+                pos += (*curstack)[elem].size();
+                ++elem;
+                if (elem == curstack->size()) {
+                    curstack = &stack;
+                    elem = 0;
+                }
             }
             // Finally we pop the consumed script components off their
             // respective stacks:
