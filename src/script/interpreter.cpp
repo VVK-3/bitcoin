@@ -1062,8 +1062,9 @@ tailcall:
                 return set_error(serror, SCRIPT_ERR_INVALID_STACK_OPERATION);
             // First we determine the size of the aggregate script, so
             // we can allocate enough space to hold it. In doing so we
-            // also advance an iterator to point to the "first" script
-            // component, the one deepest on the combined stacks.
+            // also set (*curstack)[elem] to point to the "first"
+            // script component, the one deepest on the combined
+            // stacks.
             std::vector<valtype>* curstack = &stack;
             std::size_t elem = curstack->size();
             std::size_t script_size = 0;
