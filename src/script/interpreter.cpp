@@ -263,6 +263,12 @@ bool EvalScript(std::vector<std::vector<unsigned char> >& stack, const CScript& 
     std::vector<valtype> altstack;
     int nOpCount = 0;
 
+    std::size_t env_size = script.size();
+    for (auto itr = stack.begin(); itr != stack.end(); ++itr)
+        env_size += itr->size();
+    const int sigop_limit = env_size / 64;
+    int sigop_count = 0;
+
 tailcall:
     CScript::const_iterator pc = script.begin();
     CScript::const_iterator pend = script.end();
@@ -885,6 +891,10 @@ tailcall:
                     if (stack.size() < 2)
                         return set_error(serror, SCRIPT_ERR_INVALID_STACK_OPERATION);
 
+                    ++sigop_count;
+                    if ((flags & SCRIPT_VERIFY_SIG_COUNT) && (sigop_count > sigop_limit))
+                        return set_error(serror, SCRIPT_ERR_SIG_COUNT);
+
                     valtype& vchSig    = stacktop(-2);
                     valtype& vchPubKey = stacktop(-1);
 
@@ -933,6 +943,9 @@ tailcall:
                     nOpCount += nKeysCount;
                     if (nOpCount > MAX_OPS_PER_SCRIPT)
                         return set_error(serror, SCRIPT_ERR_OP_COUNT);
+                    sigop_count += nKeysCount;
+                    if ((flags & SCRIPT_VERIFY_SIG_COUNT) && (sigop_count > sigop_limit))
+                        return set_error(serror, SCRIPT_ERR_SIG_COUNT);
                     int ikey = ++i;
                     // ikey2 is the position of last non-signature item in the stack. Top stack item = 1.
                     // With SCRIPT_VERIFY_NULLFAIL, this is used for cleanup if operation fails.

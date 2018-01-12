@@ -116,6 +116,9 @@ enum
     //
     // See BIP-117 for details.
     SCRIPT_VERIFY_TAIL_CALL = (1U << 17),
+
+    // Per-input sigop limit based on combined script + witness size
+    SCRIPT_VERIFY_SIG_COUNT = (1U << 18),
 };
 
 bool CheckSignatureEncoding(const std::vector<unsigned char> &vchSig, unsigned int flags, ScriptError* serror);
