@@ -1052,7 +1052,7 @@ bool EvalScript(std::vector<std::vector<unsigned char> >& stack, const CScript& 
                     std::size_t count = 0;
                     try {
                         // MAX_STACK_SIZE prevents count from ever
-                        // being more than 9997, which also means the
+                        // being more than 997, which also means the
                         // first parameter can never be more than two
                         // bytes, when minimally serialized.
                         auto param = CScriptNum(vchCount, true, 2).getint();
