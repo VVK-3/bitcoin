@@ -271,7 +271,7 @@ lxc-base: .stamp-lxc-base.manifest
 	    cd ~/gitian-builder; \
 	    if [ ! -f $(GUEST_CACHE_DIR)/lxc-base/$(LXC_BASE_MANIFEST)/base-vm.tar.gz ]; then \
 	        env LXC_BRIDGE=lxcbr0 LXC_GUEST_IP=10.0.3.2 _HOST_IP=10.0.3.1 \
-	            bin/make-base-vm --lxc --suite trusty --arch amd64 || exit 1; \
+	            bin/make-base-vm --lxc --suite precise --arch amd64 || exit 1; \
 	        for vm in base-*; do \
 	            tar -Srvf base-vm.tar $$vm || exit 1; \
 	            rm -f $$vm; \
