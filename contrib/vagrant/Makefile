@@ -115,6 +115,9 @@ ifdef VAGRANT_CYCLE
 	-$(call VAGRANT_HALT)
 endif
 
+.PHONY: pass
+pass: check-requirements pass-gitian-host pass-lxc-base
+
 # ===----------------------------------------------------------------------===
 
 .PHONY: check-requirements
@@ -239,6 +242,10 @@ gitian-host: .stamp-gitian-host.manifest
 	
 	echo $(GITIAN_HOST_MANIFEST) > "$@"
 
+.PHONY: pass-gitian-host
+pass-gitian-host: check-requirements
+	echo $(GITIAN_HOST_MANIFEST) > .stamp-gitian-host.manifest
+
 # ===----------------------------------------------------------------------===
 
 LXC_BASE_FILES    := contrib/vagrant/Makefile
@@ -292,6 +299,10 @@ ifdef VAGRANT_CYCLE
 endif
 	
 	echo $(LXC_BASE_MANIFEST) > "$@"
+
+.PHONY: pass-lxc-base
+pass-lxc-base: pass-gitian-host
+	echo $(LXC_BASE_MANIFEST) > .stamp-lxc-base.manifest
 
 # ===----------------------------------------------------------------------===
 
