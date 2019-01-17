@@ -55,12 +55,12 @@ SOURCEFORGE_MIRROR := downloads.sourceforge.net
 
 PKG             := osslsigncode-1.7.1.tar.gz
 $(PKG)_CHECKSUM := cc5a7e0c5baa2a98db93f1d2cc9d86e732e2a8a55fc20bf8e6aa67e2120af37c6be857dfe4b8eb8c82fd40604dbb3c845190b59c7e6b4147f06b710a256b877f
-$(PKG)_URL      := http://$(SOURCEFORGE_MIRROR)/project/osslsigncode/osslsigncode/$(PKG)
+$(PKG)_URL      := https://$(SOURCEFORGE_MIRROR)/project/osslsigncode/osslsigncode/$(PKG)
 PKGS            += $(PKG)
 
 PKG             := osslsigncode-Backports-to-1.7.1.patch
 $(PKG)_CHECKSUM := 182127638206492a609b4f909465b702f7fa89b3cd69f08f86a2efde86dbe597081fb0fd862560fac89e85baf74976c9bcb6b56d17f0e9015ea0c7e33cae1e3a
-$(PKG)_URL      := http://bitcoincore.org/cfields/osslsigncode-Backports-to-1.7.1.patch
+$(PKG)_URL      := https://bitcoincore.org/cfields/osslsigncode-Backports-to-1.7.1.patch
 PKGS            += $(PKG)
 
 # ===----------------------------------------------------------------------===
