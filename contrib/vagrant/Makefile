@@ -270,31 +270,18 @@ lxc-base: .stamp-lxc-base.manifest
 	
 	vagrant ssh --command "\
 	    if [ -d ~/gitian-builder ]; then \
-	        rm -rf ~/gitian-builder; \
-	    fi"
-	vagrant ssh --command "\
-	    git clone 'https://github.com/devrandom/gitian-builder' ~/gitian-builder"
-	vagrant ssh --command "cd ~/gitian-builder && \
-	    git checkout e2172de8"
-	vagrant ssh --command "cd ~/gitian-builder && \
-	    ln -s $(GUEST_CACHE_DIR) inputs"
-	
-	vagrant ssh --command "\
-	    cd ~/gitian-builder; \
-	    if [ ! -f $(GUEST_CACHE_DIR)/lxc-base/$(LXC_BASE_MANIFEST)/base-vm.tar.gz ]; then \
-	        env LXC_BRIDGE=lxcbr0 LXC_GUEST_IP=10.0.3.2 _HOST_IP=10.0.3.1 \
-	            bin/make-base-vm --lxc --suite trusty --arch amd64 || exit 1; \
-	        for vm in base-*; do \
-	            tar -Srvf base-vm.tar $$vm || exit 1; \
-	            rm -f $$vm; \
-	        done; \
-	        gzip --fast base-vm.tar || exit 1; \
-	        mkdir -p $(GUEST_CACHE_DIR)/lxc-base/$(LXC_BASE_MANIFEST) || exit 1; \
-	        rsync -av --remove-source-files base-vm.tar.gz $(GUEST_CACHE_DIR)/lxc-base/$(LXC_BASE_MANIFEST); \
-	        tar -tf $(GUEST_CACHE_DIR)/lxc-base/$(LXC_BASE_MANIFEST)/base-vm.tar.gz || \
-	            rm -rf $(GUEST_CACHE_DIR)/lxc-base/$(LXC_BASE_MANIFEST); \
+	        sudo rm -rf ~/gitian-builder; \
 	    fi; \
-	    tar -Sxzvf $(GUEST_CACHE_DIR)/lxc-base/$(LXC_BASE_MANIFEST)/base-vm.tar.gz"
+	    git clone 'https://github.com/devrandom/gitian-builder' ~/gitian-builder || exit 1; \
+	    cd ~/gitian-builder; \
+	    git checkout ee1806672b7b45fa6149d0163de5828ade4f8659 || exit 1; \
+	    echo 'lxc.autodev = 0' >> etc/lxc.config.in; \
+	    echo 'lxc.cgroup.devices.allow = c 108:0 rwm' >> etc/lxc.config.in; \
+	    echo 'lxc.cgroup.devices.allow = b 7:0 rwm' >> etc/lxc.config.in; \
+	    echo 'lxc.cgroup.devices.allow = c 10:200 rwm' >> etc/lxc.config.in; \
+	    ln -s '$(GUEST_CACHE_DIR)' inputs; \
+	    env LXC_BRIDGE=lxcbr0 LXC_GUEST_IP=10.0.3.2 GITIAN_HOST_IP=10.0.3.1 \
+	        bin/make-base-vm --lxc --suite bionic --arch amd64"
 	
 ifdef VAGRANT_CYCLE
 	-$(call VAGRANT_HALT)
