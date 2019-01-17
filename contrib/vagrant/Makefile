@@ -1,5 +1,5 @@
 #
-# Copyright © 2011-2018 Bitcoin Developers.
+# Copyright © 2011-2018 The Freicoin developers.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
