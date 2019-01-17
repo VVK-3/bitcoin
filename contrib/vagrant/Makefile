@@ -107,6 +107,14 @@ maintainer-clean: distclean
 .PHONY: dist
 dist: all
 
+.PHONY: shell
+shell: gitian-host
+	$(call VAGRANT_UP)
+	vagrant ssh
+ifdef VAGRANT_CYCLE
+	-$(call VAGRANT_HALT)
+endif
+
 # ===----------------------------------------------------------------------===
 
 .PHONY: check-requirements
