@@ -53,6 +53,11 @@ GUEST_CACHE_DIR := /vagrant/$(CACHE_DIR)
 
 SOURCEFORGE_MIRROR := downloads.sourceforge.net
 
+PKG             := MacOSX10.11.sdk.tar.gz
+$(PKG)_CHECKSUM := 1c8744a2a47156a7c10b299b7f39ec775c4d13a808e8524ee11825b77e597597571146cba4f6330257b8f2d93f84cf04146013d513b6ab647d061de89c560529
+$(PKG)_URL      := https://github.com/MZaf/MacOSX10.11.sdk/raw/master/$(PKG)
+PKGS            += $(PKG)
+
 PKG             := osslsigncode-1.7.1.tar.gz
 $(PKG)_CHECKSUM := cc5a7e0c5baa2a98db93f1d2cc9d86e732e2a8a55fc20bf8e6aa67e2120af37c6be857dfe4b8eb8c82fd40604dbb3c845190b59c7e6b4147f06b710a256b877f
 $(PKG)_URL      := https://$(SOURCEFORGE_MIRROR)/project/osslsigncode/osslsigncode/$(PKG)
