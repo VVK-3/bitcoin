@@ -33,6 +33,10 @@ qemu-utils
 lxc
 "
 
+BUILD_PACKAGES="
+curl
+"
+
 export DEBIAN_FRONTEND=noninteractive
 
 # Perform ALL security updates for the guest VM distribution.
@@ -48,6 +52,10 @@ apt-get -y install $ESSENTIAL_PACKAGES
 # Gitian packages are necessary for gitian-builder.
 echo "==> Installing packages necessary for gitian-builder"
 apt-get -y install $GITIAN_PACKAGES
+
+# Packages required for the various build steps required to run in the host environment.
+echo "==> Installing packages necessary for build steps in host environment"
+apt-get -y install $BUILD_PACKAGES
 
 #
 # End of File
