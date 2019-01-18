@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -eux
 
 #
 # Copyright © 2017-2018 The Freicoin developers.
