@@ -368,8 +368,10 @@ CLIENT_VERSION_MINOR := $(shell $(GREP) _CLIENT_VERSION_MINOR ../../configure.ac
 CLIENT_VERSION_REVISION := $(shell $(GREP) _CLIENT_VERSION_REVISION ../../configure.ac | head -n 1 | $(AWK) -F'[ $(rightparen)]' '{print $$2}')
 ifeq ($(CLIENT_VERSION_REVISION), 99)
 SERIES := $(CLIENT_VERSION_MAJOR).$(shell expr 1 + $(CLIENT_VERSION_MINOR))
+VERSION := $(SERIES)
 else
 SERIES := $(CLIENT_VERSION_MAJOR).$(CLIENT_VERSION_MINOR)
+VERSION := $(SERIES).$(CLIENT_VERSION_REVISION)
 endif
 
 OUTPUT_DIR         := output
