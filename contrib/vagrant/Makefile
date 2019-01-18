@@ -381,92 +381,96 @@ GUEST_OUTPUT_DIR   := /vagrant/$(OUTPUT_DIR)
 TARGETS            :=
 
 PLATFORM           := linux
-TARGET             := ${PLATFORM}
+TARGET             := $(PLATFORM)
 $(TARGET)_NAME     := $(TARGET)-$(SERIES)
-$(TARGET)_VERSION  := $(SERIES)
-$(TARGET)_OUTPUT   := $(PROJECT)-$(TARGET)-$($(TARGET)_VERSION)-gitian.zip
+$(TARGET)_VERSION  := $(VERSION)
+$(TARGET)_OUTPUTS  := $(PROJECT)-$($(TARGET)_VERSION)-aarch64-linux-gnu.tar.gz \
+                      $(PROJECT)-$($(TARGET)_VERSION)-aarch64-linux-gnu-debug.tar.gz \
+                      $(PROJECT)-$($(TARGET)_VERSION)-arm-linux-gnueabihf.tar.gz \
+                      $(PROJECT)-$($(TARGET)_VERSION)-arm-linux-gnueabihf-debug.tar.gz \
+                      $(PROJECT)-$($(TARGET)_VERSION)-i686-pc-linux-gnu.tar.gz \
+                      $(PROJECT)-$($(TARGET)_VERSION)-i686-pc-linux-gnu-debug.tar.gz \
+                      $(PROJECT)-$($(TARGET)_VERSION)-x86_64-linux-gnu.tar.gz \
+                      $(PROJECT)-$($(TARGET)_VERSION)-x86_64-linux-gnu-debug.tar.gz
 $(TARGET)_SCRIPT   := contrib/gitian-descriptors/gitian-$(TARGET).yml
 $(TARGET)_PKGS     :=
-$(TARGET)_DEPS     := $(HOST_CACHE_DIR)/src-local.tar.xz \
-                      .stamp-download-depends.h
-$(TARGET)_FILES    := $($(TARGET)_SCRIPT) \
-                      contrib/vagrant/$(HOST_CACHE_DIR)/src-local.tar.xz
-$(TARGET)_FILES    += $(foreach PACKAGE, \
-                                $($(TARGET)_PKGS), \
-                                contrib/vagrant/$(HOST_CACHE_DIR)/$(PACKAGE))
+$(TARGET)_DEPS     := .stamp-download-depends.h
+$(TARGET)_FILES    := $(SOURCE_FILES)
 $(TARGET)_FILES    := $(sort $($(TARGET)_FILES))
 $(TARGET)_MANIFEST := $(call BUILD_MANIFEST,$($(TARGET)_FILES))
 TARGETS            += $(TARGET)
 
 PLATFORM           := osx
-TARGET             := ${PLATFORM}
+TARGET             := $(PLATFORM)
 $(TARGET)_NAME     := $(TARGET)-$(SERIES)
-$(TARGET)_VERSION  := $(SERIES)
-$(TARGET)_OUTPUT   := $(PROJECT)-$(TARGET)-$($(TARGET)_VERSION)-gitian.zip
+$(TARGET)_VERSION  := $(VERSION)
+$(TARGET)_OUTPUTS  := $(PROJECT)-$($(TARGET)_VERSION)-osx64.tar.gz
 $(TARGET)_SCRIPT   := contrib/gitian-descriptors/gitian-$(TARGET).yml
-$(TARGET)_PKGS     := osslsigncode-1.7.1.tar.gz \
+$(TARGET)_PKGS     := MacOSX10.11.sdk.tar.gz \
+                      osslsigncode-1.7.1.tar.gz \
                       osslsigncode-Backports-to-1.7.1.patch
-$(TARGET)_DEPS     := $(HOST_CACHE_DIR)/src-local.tar.xz \
-                      .stamp-download-depends.h
-$(TARGET)_FILES    := $($(TARGET)_SCRIPT) \
-                      contrib/vagrant/$(HOST_CACHE_DIR)/src-local.tar.xz
-$(TARGET)_FILES    += $(foreach PACKAGE, \
-                                $($(TARGET)_PKGS), \
-                                contrib/vagrant/$(HOST_CACHE_DIR)/$(PACKAGE))
+$(TARGET)_DEPS     := .stamp-download-depends.h
+$(TARGET)_FILES    := $(SOURCE_FILES)
 $(TARGET)_FILES    := $(sort $($(TARGET)_FILES))
 $(TARGET)_MANIFEST := $(call BUILD_MANIFEST,$($(TARGET)_FILES))
 TARGETS            += $(TARGET)
 
 PLATFORM           := win
-TARGET             := ${PLATFORM}
+TARGET             := $(PLATFORM)
 $(TARGET)_NAME     := $(TARGET)-$(SERIES)
-$(TARGET)_VERSION  := $(SERIES)
-$(TARGET)_OUTPUT   := $(PROJECT)-$(TARGET)-$($(TARGET)_VERSION)-gitian.zip
+$(TARGET)_VERSION  := $(VERSION)
+$(TARGET)_OUTPUTS  := $(PROJECT)-$($(TARGET)_VERSION)-win64-debug.zip \
+                      $(PROJECT)-$($(TARGET)_VERSION)-win32-debug.zip \
+                      $(PROJECT)-$($(TARGET)_VERSION)-win64.zip \
+                      $(PROJECT)-$($(TARGET)_VERSION)-win32.zip
 $(TARGET)_SCRIPT   := contrib/gitian-descriptors/gitian-$(TARGET).yml
 $(TARGET)_PKGS     :=
-$(TARGET)_DEPS     := $(HOST_CACHE_DIR)/src-local.tar.xz \
-                      .stamp-download-depends.h
-$(TARGET)_FILES    := $($(TARGET)_SCRIPT) \
-                      contrib/vagrant/$(HOST_CACHE_DIR)/src-local.tar.xz
-$(TARGET)_FILES    += $(foreach PACKAGE, \
-                                $($(TARGET)_PKGS), \
-                                contrib/vagrant/$(HOST_CACHE_DIR)/$(PACKAGE))
+$(TARGET)_DEPS     := .stamp-download-depends.h
+$(TARGET)_FILES    := $(SOURCE_FILES)
 $(TARGET)_FILES    := $(sort $($(TARGET)_FILES))
 $(TARGET)_MANIFEST := $(call BUILD_MANIFEST,$($(TARGET)_FILES))
 TARGETS            += $(TARGET)
 
 DEPLOY_SOURCE_BUNDLE = \
-	vagrant ssh --command "rm -rf ~/'$(1)' || true"; \
-	vagrant ssh --command "mkdir -p ~/'$(1)'" || exit 1; \
-	vagrant ssh --command "cd ~/'$(1)' && \
-	    tar -xf $(GUEST_CACHE_DIR)/src-local.tar.xz" || exit 1; \
-	vagrant ssh --command "cd ~/'$(1)' && \
-	    grep -v 'contrib/vagrant/Makefile' configure.ac >.configure.ac.2 && \
-	    mv .configure.ac.2 configure.ac'"; \
-	vagrant ssh --command "cd ~/'$(1)' && \
-	    git init" || exit 1; \
-	vagrant ssh --command "cd ~/'$(1)' && \
-	    git config user.name 'Gitian Builder'" || exit 1; \
-	vagrant ssh --command "cd ~/'$(1)' && \
-	    git config user.email 'vagrant@vagrant'" || exit 1; \
-	vagrant ssh --command "cd ~/'$(1)' && \
-	    find . -not \\( -path ./.git -prune \\) -type f -print0 | xargs -0 git add -f" || exit 1; \
-	vagrant ssh --command "cd ~/'$(1)' && \
+	vagrant ssh --command "\
+	    rm -rf ~/'$(1)'; \
+	    mkdir -p ~/'$(1)' || exit 1; \
+	    cd ~/'$(1)' || exit 1; \
+	    tar -xf $(GUEST_CACHE_DIR)/src-local.tar.xz || exit 1; \
+	    git init || exit 1; \
+	    git config user.name 'Gitian Builder' || exit 1; \
+	    git config user.email 'vagrant@vagrant' || exit 1; \
+	    find . -not \\( -path ./.git -prune \\) -type f -print0 | xargs -0 git add -f || exit 1; \
 	    env GIT_COMMITTER_NAME='`cat '$(HOST_CACHE_DIR)'/src-local.committer-name`' \
 	        GIT_COMMITTER_EMAIL='`cat '$(HOST_CACHE_DIR)'/src-local.committer-email`' \
 	        GIT_COMMITTER_DATE='`cat '$(HOST_CACHE_DIR)'/src-local.committer-date`' \
 	    git commit --author='`cat '$(HOST_CACHE_DIR)'/src-local.author`' \
 	               --date='`cat '$(HOST_CACHE_DIR)'/src-local.author-date`' \
-	               -m tip" || exit 1
+	               -m tip"
+
+.PHONY: deploy-source
+deploy-source: $(HOST_CACHE_DIR)/src-local.manifest
+	$(call VAGRANT_UP)
+	$(call DEPLOY_SOURCE_BUNDLE,$(PROJECT))
+ifdef VAGRANT_CYCLE
+	-$(call VAGRANT_HALT)
+endif
+
+define OUTPUT_RULE
+$(HOST_CACHE_DIR)/$(1): $(HOST_OUTPUT_DIR)/$(1)
+	cp '$(HOST_OUTPUT_DIR)/$(1)' '$(HOST_CACHE_DIR)/$(1)'
+$(HOST_OUTPUT_DIR)/$(1): .stamp-$(2).manifest
+endef
 
 define TARGET_RULE
 .PHONY: $(1)
-$(1): $(HOST_OUTPUT_DIR)/$($(1)_OUTPUT)
-$(HOST_OUTPUT_DIR)/$($(1)_OUTPUT): \
+$(1): $(foreach OUTPUT,$($(1)_OUTPUTS),$(HOST_OUTPUT_DIR)/$(OUTPUT)) .stamp-$(1).manifest
+$(foreach OUTPUT,$($(1)_OUTPUTS),$(eval $(call OUTPUT_RULE,$(OUTPUT),$(1))))
+.stamp-$(1).manifest: \
 	.stamp-lxc-base.manifest \
 	$(HOST_CACHE_DIR)/src-local.manifest \
 	$(foreach TARGET,$($(1)_DEPS),$(TARGET)) \
-	$(foreach PACKAGE,$($(1)_PKGS),$(HOST_CACHE_DIR)/$(PACKAGE)) \
+	$(foreach PACKAGE,$($(1)_PKGS),$(HOST_CACHE_DIR)/$(PACKAGE))
 	
 	mkdir -p $(HOST_OUTPUT_DIR)
 	
@@ -476,48 +480,67 @@ $(HOST_OUTPUT_DIR)/$($(1)_OUTPUT): \
 	
 	echo `$($(1)_MANIFEST)` > .$(1).manifest
 	
-	if [ ! -f $(HOST_CACHE_DIR)/$(1)/`cat .$(1).manifest`/$($(1)_OUTPUT) ]; then \
-	    vagrant ssh --command "rm -f ~/gitian-builder/cache"; \
-	    vagrant ssh --command "mkdir -p '$(GUEST_CACHE_DIR)/gitian/cache'" || exit 1; \
-	    vagrant ssh --command "cd ~/gitian-builder && \
-	        ln -s '$(GUEST_CACHE_DIR)/gitian/cache' cache" || exit 1; \
-	    vagrant ssh --command "cd ~/gitian-builder && \
+	if ! cmp --silent '.$(1).manifest' '.stamp-$(1).manifest'; then \
+	    vagrant ssh --command "\
+	        rm -f ~/gitian-builder/cache; \
+	        mkdir -p '$(GUEST_CACHE_DIR)/gitian/cache'; \
+	        mkdir -p '$(GUEST_CACHE_DIR)/$(1)/`cat .$(1).manifest`/'; \
+	        cd ~/gitian-builder; \
+	        ln -s '$(GUEST_CACHE_DIR)/gitian/cache' cache || exit 1; \
 	        env LXC_BRIDGE=lxcbr0 LXC_GUEST_IP=10.0.3.2 GITIAN_HOST_IP=10.0.3.1 USE_LXC=1 \
-	            bin/gbuild ../$(PROJECT)/$($(1)_SCRIPT) --memory 2000 --url $(PROJECT)=~/$(PROJECT) --commit $(PROJECT)=master" || exit 1; \
-	    vagrant ssh --command "cd ~/gitian-builder/build/out && \
-	        if [ ! -f $($(1)_OUTPUT) ]; then \
-	            zip -r $($(1)_OUTPUT) * || exit 1; \
-	        fi" || exit 1; \
-	    vagrant ssh --command "mkdir -p '$(GUEST_CACHE_DIR)/$(1)/'`cat .$(1).manifest`/" || exit 1; \
+	            bin/gbuild ../$(PROJECT)/$($(1)_SCRIPT) --memory 2000 \
+	                       --url $(PROJECT)=~/$(PROJECT) \
+	                       --commit $(PROJECT)=master" || exit 1; \
+	    $(foreach OUTPUT,$($(1)_OUTPUTS),vagrant ssh --command "cd ~/gitian-builder && \
+	        mv 'build/out/$(OUTPUT)' \
+	           '$(GUEST_CACHE_DIR)/$(1)/`cat .$(1).manifest`/'" || exit 1;) \
+	    $(if $(or $($(1)_CLOSURE),$($(1)_DISTFILE)),vagrant ssh --command " \
+	        cd ~/gitian-builder/build/out || exit 1; \
+	        echo \`basename src/*.tar.gz | sed -e s:.tar.gz::\` >../basename || exit 1; \
+	        tar -xf src/*.tar.gz \`cat ../basename\`/src/clientversion.h \
+	                             \`cat ../basename\`/src/version.h \
+	                             \`cat ../basename\`/src/version.cpp 2>&1 >/dev/null || exit 1; \
+	        pushd \`cat ../basename\`/src; \
+	        echo '#include <string>'             >main.cpp && \
+	        echo '#include <iostream>'          >>main.cpp && \
+	        echo '#include \"version.h\"'       >>main.cpp && \
+	        echo 'int main(int, char**) {'      >>main.cpp && \
+	        echo '  std::cout << CLIENT_BUILD;' >>main.cpp && \
+	        echo '  return 0;'                  >>main.cpp && \
+	        echo '}'                            >>main.cpp; \
+	        c++ version.cpp main.cpp 2>&1 >/dev/null || exit 1; \
+	        ./a.out | tee '$(GUEST_CACHE_DIR)/$(1)/'`cat .$(1).manifest`/version \
+	                      >../../../version || exit 1; \
+	        popd; \
+	        rm -rf \`cat ../basename\`" || exit 1;) \
+	    $(if $($(1)_CLOSURE),vagrant ssh --command "cd ~/gitian-builder/build/out || exit 1; \
+	        $($(1)_CLOSURE)" || exit 1;) \
+	    $(if $($(1)_DISTFILE),vagrant ssh --command "cd ~/gitian-builder/build/out && \
+	        mv \"$($(1)_DISTFILE)\" \
+	           '$(GUEST_CACHE_DIR)/$(1)/'`cat .$(1).manifest`/" || exit 1;) \
 	    vagrant ssh --command "cd ~/gitian-builder && \
-	        mv build/out/$($(1)_OUTPUT) \
-	           '$(GUEST_CACHE_DIR)/$(1)/'`cat .$(1).manifest`/" || exit 1; \
-	    vagrant ssh --command "cd ~/gitian-builder && \
-	        mv result/$(PROJECT)-$($(1)_NAME)-res.yml \
-	           '$(GUEST_CACHE_DIR)/$(1)/'`cat .$(1).manifest`'/$(PROJECT)-$($(1)_NAME)-gitian-res.yml'" || exit 1; \
-	    vagrant ssh --command "cd ~/gitian-builder && \
+	        mv result/*-res.yml \
+	           '$(GUEST_CACHE_DIR)/$(1)/'`cat .$(1).manifest`'/$($(1)_NAME)-gitian-res.yml' || exit 1; \
 	        mv var/build.log \
-	           '$(GUEST_CACHE_DIR)/$(1)/'`cat .$(1).manifest`'/$(PROJECT)-$($(1)_NAME)-gitian-build.log'" || exit 1; \
-	    vagrant ssh --command "cd ~/gitian-builder && \
+	           '$(GUEST_CACHE_DIR)/$(1)/'`cat .$(1).manifest`'/$($(1)_NAME)-gitian-build.log' || exit 1; \
 	        mv var/install.log \
-	           '$(GUEST_CACHE_DIR)/$(1)/'`cat .$(1).manifest`'/$(PROJECT)-$($(1)_NAME)-gitian-install.log'" || exit 1; \
+	           '$(GUEST_CACHE_DIR)/$(1)/'`cat .$(1).manifest`'/$($(1)_NAME)-gitian-install.log'" || exit 1; \
 	fi
 	
-	cp '$(HOST_CACHE_DIR)/$(1)/'`cat .$(1).manifest`'/$($(1)_OUTPUT)' \
-	   '$(HOST_CACHE_DIR)/'
-	cp '$(HOST_CACHE_DIR)/$(1)/'`cat .$(1).manifest`'/$($(1)_OUTPUT)' \
-	   '$(HOST_OUTPUT_DIR)/'
-	cp '$(HOST_CACHE_DIR)/$(1)/'`cat .$(1).manifest`'/$(PROJECT)-$($(1)_NAME)-gitian-res.yml' \
-	   '$(HOST_OUTPUT_DIR)/'
-	cp '$(HOST_CACHE_DIR)/$(1)/'`cat .$(1).manifest`'/$(PROJECT)-$($(1)_NAME)-gitian-build.log' \
-	   '$(HOST_OUTPUT_DIR)/'
-	cp '$(HOST_CACHE_DIR)/$(1)/'`cat .$(1).manifest`'/$(PROJECT)-$($(1)_NAME)-gitian-install.log' \
-	   '$(HOST_OUTPUT_DIR)/'
+	$(foreach OUTPUT,$($(1)_OUTPUTS),cp '$(HOST_CACHE_DIR)/$(1)/'`cat .$(1).manifest`'/$(OUTPUT)' '$(HOST_OUTPUT_DIR)/';)
+	$(if $($(1)_DISTFILE),vagrant ssh --command "mkdir -p ~/gitian-builder/build/out && \
+	    cd ~/gitian-builder/build/out && \
+	    cp \"$(GUEST_CACHE_DIR)/$(1)/`cat .$(1).manifest`/version\" .. && \
+	    cp \"$(GUEST_CACHE_DIR)/$(1)/`cat .$(1).manifest`/$($(1)_DISTFILE)\" \
+	       '$(GUEST_OUTPUT_DIR)'")
+	cp '$(HOST_CACHE_DIR)/$(1)/'`cat .$(1).manifest`'/$($(1)_NAME)-gitian-res.yml' '$(HOST_OUTPUT_DIR)/'
+	cp '$(HOST_CACHE_DIR)/$(1)/'`cat .$(1).manifest`'/$($(1)_NAME)-gitian-build.log' '$(HOST_OUTPUT_DIR)/'
+	cp '$(HOST_CACHE_DIR)/$(1)/'`cat .$(1).manifest`'/$($(1)_NAME)-gitian-install.log' '$(HOST_OUTPUT_DIR)/'
 	
-	rm -f .$(1).manifest
+	mv .$(1).manifest .stamp-$(1).manifest
+	touch .stamp-$(1).manifest
 	
 	vagrant ssh --command "rm -rf ~/$(PROJECT)"
-	
 ifdef VAGRANT_CYCLE
 	-$(call VAGRANT_HALT)
 endif
