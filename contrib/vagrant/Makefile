@@ -166,9 +166,13 @@ download: $(addprefix download-,$(PKGS)) download-depends
 
 .PHONY: download-depends
 download-depends: .stamp-download-depends.h
-.stamp-download-depends.h: $(HOST_CACHE_DIR)/src-local.manifest
+.stamp-download-depends.h: .stamp-gitian-host.manifest $(HOST_CACHE_DIR)/src-local.manifest
 	mkdir -p cache/gitian/cache/common
-	make -C ../../depends download SOURCES_PATH="`pwd`/cache/gitian/cache/common"
+	$(call VAGRANT_UP)
+	$(call DEPLOY_SOURCE_BUNDLE,$(PROJECT))
+	vagrant ssh --command "\
+	    make -C '$(PROJECT)'/depends download SOURCES_PATH='$(GUEST_CACHE_DIR)'/gitian/cache/common"
+	-$(call VAGRANT_HALT)
 	@touch "$@"
 
 PKG_CHECKSUM = \
